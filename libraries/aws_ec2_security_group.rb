@@ -11,7 +11,7 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
   attr_reader :description, :group_id, :group_name, :vpc_id, :ingress_rules
 
   def to_s
-    'EC2 Security Group'
+    "EC2 Security Group #{@group_id}"
   end
 
   # Underlying FilterTable implementation.
@@ -114,7 +114,6 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
     @ingress_rules.each do |rule|
       @table.push(rule)
     end
-    puts @table
   end
 
   class Backend
