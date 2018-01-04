@@ -117,10 +117,12 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
   def populate_ingress_egress_rules
     @table = []
     @ingress_rules.each do |rule|
+      rule = Hash[rule.each_pair.to_a]
       rule[:type] = 'ingress'
       @table.push(rule)
     end
     @egress_rules.each do |rule|
+      rule = Hash[rule.each_pair.to_a]
       rule[:type] = 'egress'
       @table.push(rule)
     end
