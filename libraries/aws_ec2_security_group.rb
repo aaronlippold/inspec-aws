@@ -10,7 +10,7 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
   '
 
   include AwsResourceMixin
-  attr_reader :description, :group_id, :group_name, :vpc_id, :ingress_rules
+  attr_reader :description, :group_id, :group_name, :vpc_id, :ingress_rules, :egress_rules
 
   def to_s
     "EC2 Security Group #{@group_id}"
@@ -21,6 +21,7 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
   filter.add_accessor(:where)
         .add_accessor(:entries)
         .add(:exists?) { |x| !x.entries.empty? }
+        .add(:type, field: :type)
         .add(:group_ids, field: :group_id)
         .add(:from_port, field: :from_port)
         .add(:to_port, field: :to_port)
@@ -85,6 +86,7 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
       :group_name,
       :vpc_id,
       :ingress_rules,
+      :egress_rules,
     ].each do |criterion_name|
       val = instance_variable_get("@#{criterion_name}".to_sym)
       next if val.nil?
@@ -108,12 +110,18 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
     @group_name    = dsg_response.security_groups[0].group_name
     @vpc_id        = dsg_response.security_groups[0].vpc_id
     @ingress_rules = dsg_response.security_groups[0].ip_permissions
-    populate_ingress_rules
+    @egress_rules  = dsg_response.security_groups[0].ip_permissions_egress
+    populate_ingress_egress_rules
   end
 
-  def populate_ingress_rules
+  def populate_ingress_egress_rules
     @table = []
     @ingress_rules.each do |rule|
+      rule[:type] = 'ingress'
+      @table.push(rule)
+    end
+    @egress_rules.each do |rule|
+      rule[:type] = 'egress'
       @table.push(rule)
     end
   end
