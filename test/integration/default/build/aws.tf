@@ -6,7 +6,7 @@ terraform {
 provider "aws" {
   version = "= 1.1"
   alias  = "virginia"
-  region = "us-east-2"
+  region = "us-east-1"
 }
 
 provider "random" {}
