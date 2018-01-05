@@ -5,8 +5,6 @@ terraform {
 # S3 buckets
 provider "aws" {
   version = "= 1.1"
-  alias  = "virginia"
-  region = "us-east-2"
 }
 
 provider "random" {}

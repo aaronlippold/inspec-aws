@@ -6,7 +6,6 @@ resource "aws_s3_bucket" "aws_demo_bucket" {
   bucket        = "aws-demo-s3-bucket-${random_id.bucket_id.hex}"
   acl           = "public-read"
   force_destroy = true
-  provider      = "aws.virginia"
 
   tags {
     Name        = "aws_demo_bucket"
