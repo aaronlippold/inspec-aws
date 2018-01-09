@@ -98,7 +98,6 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
       )
     end
     dsg_response = backend.describe_security_groups(filters: filters)
-
     if dsg_response.security_groups.empty?
       @exists = false
       return

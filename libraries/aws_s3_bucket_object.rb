@@ -1,10 +1,12 @@
+# author: Matthew Dromazos
+
 require '_aws'
 
 class AwsS3BucketObject < Inspec.resource(1)
   name 'aws_s3_bucket_object'
   desc 'Verifies settings for a s3 bucket object'
   example "
-    describe aws_s3_bucket_object(name: 'bucket_name', key: 'file_name') do
+    describe aws_s3_bucket_object(bucket_name: 'bucket_name', key: 'file_name') do
       it { should exist }
       its('permissions.authUsers') { should be_in [] }
       its('permissions.owner') { should be_in ['FULL_CONTROL'] }
@@ -13,11 +15,11 @@ class AwsS3BucketObject < Inspec.resource(1)
   "
 
   include AwsResourceMixin
-  attr_reader :name, :key, :id, :public, :permissions
+  attr_reader :bucket_name, :key, :id, :public, :permissions
   alias public? public
 
   def to_s
-    "S3 Bucket Object #{@key} (#{@name})"
+    "s3://#{@bucket_name}/#{@key}"
   end
 
   private
@@ -25,21 +27,19 @@ class AwsS3BucketObject < Inspec.resource(1)
   def validate_params(raw_params)
     validated_params = check_resource_param_names(
       raw_params: raw_params,
-      allowed_params: [:name, :key, :id],
-      allowed_scalar_name: [:name, :key],
+      allowed_params: [:bucket_name, :key, :id],
+      allowed_scalar_name: [:bucket_name],
       allowed_scalar_type: String,
     )
-    if validated_params.empty?
-      raise ArgumentError, 'You must provide a role_name to aws_iam_role.'
+    if validated_params.empty? or !validated_params.key?(:bucket_name) or !validated_params.key?(:key)
+      raise ArgumentError, 'You must provide a bucket_name and key to aws_s3_bucket_object.'
     end
     validated_params
   end
 
   def fetch_from_aws
-    # Transform into filter format expected by AWS
-    filters = []
     [
-      :name,
+      :bucket_name,
       :key,
       :id,
       :public,
@@ -47,38 +47,30 @@ class AwsS3BucketObject < Inspec.resource(1)
     ].each do |criterion_name|
       val = instance_variable_get("@#{criterion_name}".to_sym)
       next if val.nil?
-      filters.push(
-        {
-          name: criterion_name.to_s.tr('_', '-'),
-          values: [val],
-        },
-      )
     end
-
     begin
       fetch_permissions
-    rescue Aws::IAM::Errors::NoSuchEntity
+      @exists = true
+    rescue StandardError
       @exists = false
       return
     end
-    @exists = true
   end
 
   # get the permissions of an objectg
   def fetch_permissions
     # Use a Mash to make it easier to access hash elements in "its('permissions') {should ...}"
     @permissions = Hashie::Mash.new({})
-    # Make sure standard extensions exist so we don't get nil for nil:NilClass
-    # when the user tests for extensions which aren't present
     %w{
       owner authUsers everyone
     }.each { |perm| @permissions[perm] ||= [] }
 
     @public = false
-    AwsS3BucketObject::BackendFactory.create.get_object_acl(bucket: name, key: key).each do |grant|
+    AwsS3BucketObject::BackendFactory.create.get_object_acl(bucket: bucket_name, key: key).each do |grant|
       permission = grant[:permission]
-      type = grant.grantee[:type]
-      if type == 'Group'
+      type       = grant.grantee[:type]
+      uri        = grant.grantee[:uri]
+      if type == 'Group' and uri == 'http://acs.amazonaws.com/groups/global/AllUsers'
         @public = true
         @permissions[:everyone].push(permission)
       elsif type == 'AmazonCustomerByEmail'
