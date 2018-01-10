@@ -101,3 +101,9 @@ The `have_public_objects` matcher tests if the S3 Bucket has any objects that ar
 The `public` matcher tests if the S3 bucket has an ACL permission that allows the public to view the bucket
 
     it { should_not be_public }
+
+### have_logging_enabled
+
+The `have_logging_enabled` matcher tests if the S3 bucket has logging enabled
+
+    it { should have_logging_enabled }

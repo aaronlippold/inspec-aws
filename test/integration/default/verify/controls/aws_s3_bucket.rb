@@ -37,5 +37,6 @@ control 'aws_s3_bucket matchers test' do
   describe aws_s3_bucket(bucket_name: fixtures['s3_bucket_name_public']) do
     it { should have_public_objects }
     it { should be_public }
+    it { should have_logging_enabled }
   end
 end

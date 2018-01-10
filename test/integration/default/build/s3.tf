@@ -1,8 +1,18 @@
+resource "aws_s3_bucket" "log_bucket" {
+  bucket = "aws-demo-s3-log-bucket-${terraform.env}.chef.io"
+  acl    = "log-delivery-write"
+}
+
 resource "aws_s3_bucket" "aws_demo_bucket_public" {
   bucket        = "aws-demo-s3-bucket-public-${terraform.env}.chef.io"
   acl           = "public-read"
   force_destroy = true
   region        = "${var.region}"
+
+  logging {
+    target_bucket = "${aws_s3_bucket.log_bucket.id}"
+    target_prefix = "log/"
+  }
 }
 
 resource "aws_s3_bucket" "aws_demo_bucket_private" {
@@ -10,6 +20,11 @@ resource "aws_s3_bucket" "aws_demo_bucket_private" {
   acl           = "private"
   force_destroy = true
   region        = "${var.region}"
+
+  logging {
+    target_bucket = "${aws_s3_bucket.log_bucket.id}"
+    target_prefix = "log/"
+  }
 }
 
 output "s3_bucket_name_public" {

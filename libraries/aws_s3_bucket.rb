@@ -15,12 +15,18 @@ class AwsS3Bucket < Inspec.resource(1)
   "
 
   include AwsResourceMixin
-  attr_reader :bucket_name, :permissions, :region, :public
+  attr_reader :bucket_name, :permissions, :region, :public, :logging
   alias public? public
 
   def to_s
     "S3 Bucket #{@bucket_name}"
   end
+
+  def has_logging_enabled?
+    !logging.nil?
+  end
+  alias have_logging_enabled? has_logging_enabled?
+  alias have_logging_enabled has_logging_enabled?
 
   def public_objects
     compute_has_public_objects unless !@has_public_objects.nil?
@@ -56,6 +62,7 @@ class AwsS3Bucket < Inspec.resource(1)
       :permissions,
       :region,
       :public,
+      :logging,
     ].each do |criterion_name|
       val = instance_variable_get("@#{criterion_name}".to_sym)
       next if val.nil?
@@ -64,6 +71,7 @@ class AwsS3Bucket < Inspec.resource(1)
     begin
       fetch_permissions
       fetch_region
+      fetch_loging
     rescue StandardError
       @exists = false
       return
@@ -89,7 +97,7 @@ class AwsS3Bucket < Inspec.resource(1)
   end
 
   def fetch_permissions
-    # Use a Mash to make it easier to access hash elements in "its('permissions') {should ...}"
+    # Use a Mash to make it easier to access hash elements in "its('permissions.everyone') {should ...}"
     @permissions = Hashie::Mash.new({})
     @public = false
     # Make sure standard extensions exist so we don't get nil for nil:NilClass
@@ -120,6 +128,10 @@ class AwsS3Bucket < Inspec.resource(1)
     @region = 'us-east-1' unless @region != ''
   end
 
+  def fetch_loging
+    @logging = AwsS3Bucket::BackendFactory.create.get_bucket_logging(bucket: bucket_name).logging_enabled
+  end
+
   # Uses the SDK API to really talk to AWS
   class Backend
     class AwsClientApi
@@ -139,6 +151,10 @@ class AwsS3Bucket < Inspec.resource(1)
 
       def get_bucket_location(query)
         AWSConnection.new.s3_client.get_bucket_location(query)
+      end
+
+      def get_bucket_logging(query)
+        AWSConnection.new.s3_client.get_bucket_logging(query)
       end
     end
   end
