@@ -20,7 +20,6 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
   filter = FilterTable.create
   filter.add_accessor(:where)
         .add_accessor(:entries)
-        .add(:exists?) { |x| !x.entries.empty? }
         .add(:type, field: :type)
         .add(:group_ids, field: :group_id)
         .add(:from_port, field: :from_port)
@@ -36,9 +35,9 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
 
   def open_on_port?(port)
     @ingress_rules.each do |rule|
-      next unless rule.from_port == port or rule.from_port == 'ALL'
-      rule.cidr_ip.each do |ip_range|
-        if ip_range == '0.0.0.0/0'
+      next unless rule.from_port == port or rule.from_port.nil?
+      rule.ip_ranges.each do |ip_range|
+        if ip_range.cidr_ip == '0.0.0.0/0' or ip_range.cidr_ip == 'ALL'
           return true
         end
       end
