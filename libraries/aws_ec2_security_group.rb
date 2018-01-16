@@ -35,7 +35,7 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
 
   def open_on_port?(port)
     @ingress_rules.each do |rule|
-      next unless rule.from_port == port or rule.from_port.nil?
+      next unless port.between?(rule.from_port, rule.to_port) or rule.from_port.nil?
       rule.ip_ranges.each do |ip_range|
         if ip_range.cidr_ip == '0.0.0.0/0' or ip_range.cidr_ip == 'ALL'
           return true
