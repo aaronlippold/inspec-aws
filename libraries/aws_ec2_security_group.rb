@@ -35,8 +35,6 @@ class AwsEc2SecurityGroup < Inspec.resource(1)
 
   def open_on_port?(port)
     @ingress_rules.each do |rule|
-      require 'pry'
-      binding.pry
       # Will skip unless the port is equal to the from port or
       # the rule allows all traffic, or it is between the to and from port.
       next unless port == rule.from_port \
